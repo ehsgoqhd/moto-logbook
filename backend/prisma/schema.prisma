@@ -2,10 +2,10 @@
 // https://www.prisma.io/docs/concepts/components/prisma-schema
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -169,6 +169,7 @@ model ExpenseRecord {
   category     ExpenseCategory
   title        String
   amount       Float           // 금액 (원)
+  expiryDate   DateTime?       // 만료일 (보험/세금 등)
   note         String?
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt

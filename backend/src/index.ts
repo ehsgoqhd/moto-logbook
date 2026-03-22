@@ -3,6 +3,11 @@ import express from 'express'
 import cors from 'cors'
 import helmet from 'helmet'
 import { rateLimit } from 'express-rate-limit'
+import authRouter from './routes/auth'
+import fuelLogsRouter from './routes/fuelLogs'
+import maintenanceLogsRouter from './routes/maintenanceLogs'
+import insuranceTaxesRouter from './routes/insuranceTaxes'
+import { startNotificationJob } from './jobs/notificationJob'
 
 const app = express()
 const PORT = process.env.PORT ?? 4000
@@ -33,10 +38,15 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-// ── API routes (stub) ─────────────────────
+// ── API routes ────────────────────────────
 app.get('/api', (_req, res) => {
   res.json({ message: 'Moto Logbook API v1' })
 })
+
+app.use('/api/auth', authRouter)
+app.use('/api/fuel-logs', fuelLogsRouter)
+app.use('/api/maintenance-logs', maintenanceLogsRouter)
+app.use('/api/insurance-taxes', insuranceTaxesRouter)
 
 // ── 404 handler ───────────────────────────
 app.use((_req, res) => {
@@ -52,6 +62,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 // ── Start ─────────────────────────────────
 app.listen(PORT, () => {
   console.log(`🏍  Moto Logbook API running on http://localhost:${PORT}`)
+  startNotificationJob()
 })
 
 export default app
