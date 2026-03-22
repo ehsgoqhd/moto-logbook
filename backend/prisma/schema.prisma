@@ -1,0 +1,383 @@
+// Prisma Schema — Moto Logbook (오토바이 차계부)
+// https://www.prisma.io/docs/concepts/components/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ──────────────────────────────────────────
+// AUTH
+// ──────────────────────────────────────────
+
+model User {
+  id           String       @id @default(cuid())
+  email        String       @unique
+  password     String
+  name         String
+  avatarUrl    String?
+  refreshToken String?
+  role         String       @default("USER") // "USER" | "ADMIN"
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  motorcycles   Motorcycle[]
+  favoriteShops UserFavoriteShop[]
+  shopReviews   ShopReview[]
+  reservations  ShopReservation[]
+
+  @@index([email])
+  @@map("users")
+}
+
+// ──────────────────────────────────────────
+// MOTORCYCLE
+// ──────────────────────────────────────────
+
+model Motorcycle {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name             String               // 별칭 (예: "내 CBR500R")
+  brand            String               // 제조사 (예: Honda)
+  model            String               // 모델명 (예: CBR500R)
+  year             Int                  // 연식
+  engineCC         Int?                 // 배기량 (cc)
+  plateNumber      String?              // 번호판
+  vin              String?              // 차대번호
+  color            String?              // 색상
+  purchaseDate     DateTime?            // 구매일
+  purchaseMileage  Int       @default(0) // 구매 시 주행거리
+  currentMileage   Int       @default(0) // 현재 주행거리
+  imageUrl         String?              // 대표 사진 (R2 URL)
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  fuelRecords    FuelRecord[]
+  maintenances   MaintenanceRecord[]
+  expenses       ExpenseRecord[]
+  reminders      Reminder[]
+  photos         Photo[]
+  reservations   ShopReservation[]
+
+  @@index([userId])
+  @@map("motorcycles")
+}
+
+// ──────────────────────────────────────────
+// FUEL RECORD (주유 기록)
+// ──────────────────────────────────────────
+
+model FuelRecord {
+  id            String     @id @default(cuid())
+  motorcycleId  String
+  motorcycle    Motorcycle @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+
+  date          DateTime
+  mileage       Int                // 주유 시 주행거리 (km)
+  liters        Float              // 주유량 (L)
+  pricePerLiter Float              // 리터당 가격 (원)
+  totalCost     Float              // 총 주유 금액 (원)
+  fullTank      Boolean  @default(true)  // 만탱크 여부
+  station       String?            // 주유소명
+  fuelType      FuelType @default(GASOLINE)
+  note          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([motorcycleId, date])
+  @@map("fuel_records")
+}
+
+enum FuelType {
+  GASOLINE    // 일반 휘발유
+  PREMIUM     // 고급 휘발유
+  DIESEL
+  ELECTRIC
+}
+
+// ──────────────────────────────────────────
+// MAINTENANCE RECORD (정비 기록)
+// ──────────────────────────────────────────
+
+model MaintenanceRecord {
+  id           String              @id @default(cuid())
+  motorcycleId String
+  motorcycle   Motorcycle          @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+  shopId       String?             // 연결된 정비샵 (optional)
+  repairShop   RepairShop?         @relation(fields: [shopId], references: [id], onDelete: SetNull)
+
+  date         DateTime
+  mileage      Int                 // 정비 시 주행거리 (km)
+  category     MaintenanceCategory
+  title        String              // 정비 항목명
+  description  String?             // 상세 내용
+  cost         Float    @default(0) // 비용 (원)
+  shop         String?             // 정비소명 (텍스트 직접 입력, 레거시)
+  nextMileage  Int?                // 다음 정비 예정 주행거리
+  nextDate     DateTime?           // 다음 정비 예정일
+  note         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  photos Photo[]
+
+  @@index([motorcycleId, date])
+  @@index([motorcycleId, category])
+  @@index([shopId])
+  @@map("maintenance_records")
+}
+
+enum MaintenanceCategory {
+  OIL_CHANGE    // 엔진오일 교환
+  OIL_FILTER    // 오일필터
+  AIR_FILTER    // 에어필터
+  TIRE_FRONT    // 앞타이어
+  TIRE_REAR     // 뒷타이어
+  BRAKE_PAD     // 브레이크 패드
+  BRAKE_FLUID   // 브레이크 오일
+  CHAIN         // 체인 교환/조정/윤활
+  SPARK_PLUG    // 점화플러그
+  BATTERY       // 배터리
+  COOLANT       // 냉각수
+  SUSPENSION    // 서스펜션
+  VALVE         // 밸브 조정
+  BELT          // 벨트 (스쿠터)
+  INSPECTION    // 법정검사
+  RECALL        // 리콜
+  REPAIR        // 수리
+  CLEANING      // 세차/청소
+  OTHER         // 기타
+}
+
+// ──────────────────────────────────────────
+// EXPENSE RECORD (기타 지출)
+// ──────────────────────────────────────────
+
+model ExpenseRecord {
+  id           String          @id @default(cuid())
+  motorcycleId String
+  motorcycle   Motorcycle      @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+
+  date         DateTime
+  category     ExpenseCategory
+  title        String
+  amount       Float           // 금액 (원)
+  note         String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([motorcycleId, date])
+  @@map("expense_records")
+}
+
+enum ExpenseCategory {
+  INSURANCE     // 보험료
+  REGISTRATION  // 등록/이전
+  TAX           // 자동차세
+  PARKING       // 주차비
+  TOLL          // 통행료
+  ACCESSORIES   // 부품/액세서리
+  GEAR          // 라이딩 기어
+  WASH          // 세차
+  STORAGE       // 보관료
+  OTHER         // 기타
+}
+
+// ──────────────────────────────────────────
+// REMINDER (알림/리마인더)
+// ──────────────────────────────────────────
+
+model Reminder {
+  id              String       @id @default(cuid())
+  motorcycleId    String
+  motorcycle      Motorcycle   @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+
+  title           String
+  type            ReminderType
+  category        MaintenanceCategory?
+
+  // 주행거리 기준
+  targetMileage   Int?         // 목표 주행거리
+  intervalMileage Int?         // 반복 주기 (km)
+
+  // 날짜 기준
+  targetDate      DateTime?
+  repeatDays      Int?         // 반복 주기 (일)
+
+  isActive        Boolean      @default(true)
+  lastTriggeredAt DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([motorcycleId, isActive])
+  @@map("reminders")
+}
+
+enum ReminderType {
+  MILEAGE  // 주행거리 기준
+  DATE     // 날짜 기준
+  BOTH     // 둘 다 (먼저 도달한 기준으로 알림)
+}
+
+// ──────────────────────────────────────────
+// PHOTO (사진 — Cloudflare R2)
+// ──────────────────────────────────────────
+
+model Photo {
+  id                  String             @id @default(cuid())
+  motorcycleId        String
+  motorcycle          Motorcycle         @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+  maintenanceRecordId String?
+  maintenanceRecord   MaintenanceRecord? @relation(fields: [maintenanceRecordId], references: [id], onDelete: SetNull)
+
+  url         String   // R2 public URL
+  key         String   // R2 object key
+  filename    String
+  mimeType    String
+  size        Int      // bytes
+  caption     String?
+  createdAt   DateTime @default(now())
+
+  @@index([motorcycleId])
+  @@index([maintenanceRecordId])
+  @@map("photos")
+}
+
+// ──────────────────────────────────────────
+// REPAIR SHOP (정비샵)
+// ──────────────────────────────────────────
+
+model RepairShop {
+  id            String   @id @default(cuid())
+  name          String
+  address       String
+  lat           Float?
+  lng           Float?
+  phone         String?
+  kakaoMapUrl   String?
+  description   String?
+  businessHours String?
+  isRecommended Boolean  @default(false)
+  sourceType    String   @default("user") // "admin" | "user"
+  avgRating     Float    @default(0)
+  reviewCount   Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  specialties     ShopSpecialty[]
+  reviews         ShopReview[]
+  favorites       UserFavoriteShop[]
+  reservations    ShopReservation[]
+  slots           ReservationSlot[]
+  maintenanceLogs MaintenanceRecord[]
+
+  @@index([lat, lng])
+  @@index([isRecommended])
+  @@map("repair_shops")
+}
+
+// ──────────────────────────────────────────
+// SHOP SPECIALTY (정비샵 전문 분야)
+// ──────────────────────────────────────────
+
+model ShopSpecialty {
+  id       String     @id @default(cuid())
+  shopId   String
+  shop     RepairShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  brand    String     // 취급 브랜드 (예: Honda, Yamaha)
+  category String?    // 전문 카테고리 (예: 엔진오일, 타이어)
+
+  @@index([shopId])
+  @@map("shop_specialties")
+}
+
+// ──────────────────────────────────────────
+// USER FAVORITE SHOP (즐겨찾기 정비샵)
+// ──────────────────────────────────────────
+
+model UserFavoriteShop {
+  id        String     @id @default(cuid())
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shopId    String
+  shop      RepairShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  memo      String?
+  createdAt DateTime   @default(now())
+
+  @@unique([userId, shopId])
+  @@index([userId])
+  @@map("user_favorite_shops")
+}
+
+// ──────────────────────────────────────────
+// SHOP REVIEW (정비샵 리뷰)
+// ──────────────────────────────────────────
+
+model ShopReview {
+  id        String     @id @default(cuid())
+  shopId    String
+  shop      RepairShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int        // 1~5
+  content   String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([shopId, userId])
+  @@index([shopId])
+  @@map("shop_reviews")
+}
+
+// ──────────────────────────────────────────
+// RESERVATION SLOT (예약 슬롯)
+// ──────────────────────────────────────────
+
+model ReservationSlot {
+  id              String     @id @default(cuid())
+  shopId          String
+  shop            RepairShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  slotDate        DateTime
+  slotTime        String     // "09:00", "10:30" 형식
+  maxBookings     Int        @default(1)
+  currentBookings Int        @default(0)
+  isActive        Boolean    @default(true)
+
+  reservations ShopReservation[]
+
+  @@index([shopId, slotDate])
+  @@map("reservation_slots")
+}
+
+// ──────────────────────────────────────────
+// SHOP RESERVATION (예약)
+// ──────────────────────────────────────────
+
+model ShopReservation {
+  id           String          @id @default(cuid())
+  shopId       String
+  shop         RepairShop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slotId       String
+  slot         ReservationSlot @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  motorcycleId String
+  motorcycle   Motorcycle      @relation(fields: [motorcycleId], references: [id], onDelete: Cascade)
+  serviceType  String          // 요청 서비스 유형
+  memo         String?
+  status       String          @default("PENDING") // PENDING | CONFIRMED | CANCELLED
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  @@index([shopId])
+  @@index([userId])
+  @@index([slotId])
+  @@map("shop_reservations")
+}
