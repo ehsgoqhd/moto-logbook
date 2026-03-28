@@ -4,6 +4,7 @@ import cors from 'cors'
 import helmet from 'helmet'
 import { rateLimit } from 'express-rate-limit'
 import authRouter from './routes/auth'
+import motorcyclesRouter from './routes/motorcycles'
 import fuelLogsRouter from './routes/fuelLogs'
 import maintenanceLogsRouter from './routes/maintenanceLogs'
 import insuranceTaxesRouter from './routes/insuranceTaxes'
@@ -44,6 +45,7 @@ app.get('/api', (_req, res) => {
 })
 
 app.use('/api/auth', authRouter)
+app.use('/api/motorcycles', motorcyclesRouter)
 app.use('/api/fuel-logs', fuelLogsRouter)
 app.use('/api/maintenance-logs', maintenanceLogsRouter)
 app.use('/api/insurance-taxes', insuranceTaxesRouter)

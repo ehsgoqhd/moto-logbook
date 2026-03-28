@@ -1,16 +1,44 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate } from 'react-router-dom'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import { LoginPage } from './pages/auth/LoginPage'
+import { RegisterPage } from './pages/auth/RegisterPage'
+import { DashboardPage } from './pages/DashboardPage'
+import { MotorcyclesPage } from './pages/motorcycles/MotorcyclesPage'
+import { MotorcycleFormPage } from './pages/motorcycles/MotorcycleFormPage'
+import { FuelLogsPage } from './pages/fuel/FuelLogsPage'
+import { FuelLogFormPage } from './pages/fuel/FuelLogFormPage'
+import { MaintenancePage } from './pages/maintenance/MaintenancePage'
+import { MaintenanceFormPage } from './pages/maintenance/MaintenanceFormPage'
+import { InsurancePage } from './pages/insurance/InsurancePage'
+import { InsuranceFormPage } from './pages/insurance/InsuranceFormPage'
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <h1 className="text-4xl font-bold text-brand-500 mb-2">MotoLog</h1>
-            <p className="text-gray-400">오토바이 차계부</p>
-          </div>
-        </div>
-      } />
+      {/* 공개 라우트 */}
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+
+      {/* 보호 라우트 */}
+      <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+
+      <Route path="/motorcycles" element={<ProtectedRoute><MotorcyclesPage /></ProtectedRoute>} />
+      <Route path="/motorcycles/new" element={<ProtectedRoute><MotorcycleFormPage /></ProtectedRoute>} />
+      <Route path="/motorcycles/:id/edit" element={<ProtectedRoute><MotorcycleFormPage /></ProtectedRoute>} />
+
+      <Route path="/fuel" element={<ProtectedRoute><FuelLogsPage /></ProtectedRoute>} />
+      <Route path="/fuel/new" element={<ProtectedRoute><FuelLogFormPage /></ProtectedRoute>} />
+      <Route path="/fuel/:id/edit" element={<ProtectedRoute><FuelLogFormPage /></ProtectedRoute>} />
+
+      <Route path="/maintenance" element={<ProtectedRoute><MaintenancePage /></ProtectedRoute>} />
+      <Route path="/maintenance/new" element={<ProtectedRoute><MaintenanceFormPage /></ProtectedRoute>} />
+      <Route path="/maintenance/:id/edit" element={<ProtectedRoute><MaintenanceFormPage /></ProtectedRoute>} />
+
+      <Route path="/more" element={<ProtectedRoute><InsurancePage /></ProtectedRoute>} />
+      <Route path="/more/new" element={<ProtectedRoute><InsuranceFormPage /></ProtectedRoute>} />
+      <Route path="/more/:id/edit" element={<ProtectedRoute><InsuranceFormPage /></ProtectedRoute>} />
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
