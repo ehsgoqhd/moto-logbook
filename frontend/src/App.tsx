@@ -2,6 +2,8 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { LoginPage } from './pages/auth/LoginPage'
 import { RegisterPage } from './pages/auth/RegisterPage'
+import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage'
+import { ResetPasswordPage } from './pages/auth/ResetPasswordPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { MotorcyclesPage } from './pages/motorcycles/MotorcyclesPage'
 import { MotorcycleFormPage } from './pages/motorcycles/MotorcycleFormPage'
@@ -18,6 +20,8 @@ function App() {
       {/* 공개 라우트 */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* 보호 라우트 */}
       <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />

@@ -1,12 +1,14 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import { authApi } from '../../api/auth'
 import { useAuth } from '../../contexts/AuthContext'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
+
+const SAVED_EMAIL_KEY = 'motolog_saved_email'
 
 const schema = z.object({
   email: z.string().email('올바른 이메일을 입력하세요'),
@@ -17,16 +19,27 @@ type FormData = z.infer<typeof schema>
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { login } = useAuth()
   const [error, setError] = useState('')
+  const successMessage = (location.state as { message?: string })?.message ?? ''
+
+  const savedEmail = localStorage.getItem(SAVED_EMAIL_KEY) ?? ''
+  const [rememberEmail, setRememberEmail] = useState(savedEmail !== '')
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
+    defaultValues: { email: savedEmail },
   })
 
   async function onSubmit(data: FormData) {
     try {
       setError('')
+      if (rememberEmail) {
+        localStorage.setItem(SAVED_EMAIL_KEY, data.email)
+      } else {
+        localStorage.removeItem(SAVED_EMAIL_KEY)
+      }
       const res = await authApi.login(data.email, data.password)
       const { accessToken, refreshToken, user } = res.data.data
       login(accessToken, refreshToken, user)
@@ -61,6 +74,25 @@ export function LoginPage() {
             error={errors.password?.message}
             {...register('password')}
           />
+
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-brand-500 cursor-pointer"
+                checked={rememberEmail}
+                onChange={(e) => setRememberEmail(e.target.checked)}
+              />
+              <span className="text-sm text-gray-400">이메일 저장</span>
+            </label>
+            <Link to="/forgot-password" className="text-sm text-brand-400 hover:text-brand-300">
+              비밀번호 찾기
+            </Link>
+          </div>
+
+          {successMessage && (
+            <p className="text-sm text-green-400 text-center">{successMessage}</p>
+          )}
 
           {error && (
             <p className="text-sm text-red-400 text-center">{error}</p>

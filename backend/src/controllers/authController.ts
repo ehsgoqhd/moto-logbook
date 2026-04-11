@@ -1,6 +1,7 @@
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import crypto from 'crypto'
 import { prisma } from '../lib/prisma'
 import { JwtPayload } from '../middlewares/auth'
 
@@ -134,6 +135,73 @@ export async function logout(req: Request, res: Response) {
   }
 
   res.json({ success: true, data: null, message: '로그아웃 되었습니다.' })
+}
+
+// POST /api/auth/forgot-password
+export async function forgotPassword(req: Request, res: Response) {
+  const { email } = req.body
+
+  if (!email) {
+    res.status(400).json({ success: false, message: '이메일을 입력해주세요.' })
+    return
+  }
+
+  const user = await prisma.user.findUnique({ where: { email } })
+
+  // 보안상 사용자 존재 여부와 관계없이 동일한 응답 반환
+  if (user) {
+    const token = crypto.randomBytes(32).toString('hex')
+    const expiry = new Date(Date.now() + 1000 * 60 * 60) // 1시간
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { passwordResetToken: token, passwordResetExpiry: expiry },
+    })
+
+    const resetUrl = `${process.env.CORS_ORIGIN}/reset-password?token=${token}`
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('\n[비밀번호 재설정 링크]', resetUrl, '\n')
+    }
+    // TODO: 프로덕션에서는 이메일 발송으로 교체
+  }
+
+  res.json({ success: true, message: '입력한 이메일로 재설정 링크를 발송했습니다.' })
+}
+
+// POST /api/auth/reset-password
+export async function resetPassword(req: Request, res: Response) {
+  const { token, password } = req.body
+
+  if (!token || !password) {
+    res.status(400).json({ success: false, message: '토큰과 새 비밀번호를 입력해주세요.' })
+    return
+  }
+
+  if (password.length < 8) {
+    res.status(400).json({ success: false, message: '비밀번호는 8자 이상이어야 합니다.' })
+    return
+  }
+
+  const user = await prisma.user.findFirst({
+    where: {
+      passwordResetToken: token,
+      passwordResetExpiry: { gt: new Date() },
+    },
+  })
+
+  if (!user) {
+    res.status(400).json({ success: false, message: '유효하지 않거나 만료된 링크입니다.' })
+    return
+  }
+
+  const hashed = await bcrypt.hash(password, 12)
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { password: hashed, passwordResetToken: null, passwordResetExpiry: null },
+  })
+
+  res.json({ success: true, message: '비밀번호가 변경되었습니다. 다시 로그인해주세요.' })
 }
 
 // GET /api/auth/me
