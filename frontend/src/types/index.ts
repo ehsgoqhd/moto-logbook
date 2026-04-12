@@ -179,6 +179,32 @@ export interface CreateMaintenanceLogInput {
   note?: string
 }
 
+// ── Repair Shop ───────────────────────────────────────────────────────────
+
+export interface ShopSpecialty {
+  id: string
+  brand: string
+  category?: string
+}
+
+export interface RepairShop {
+  id: string
+  name: string
+  address: string
+  lat?: number
+  lng?: number
+  phone?: string
+  kakaoMapUrl?: string
+  description?: string
+  businessHours?: string
+  isRecommended: boolean
+  avgRating: number
+  reviewCount: number
+  specialties: ShopSpecialty[]
+  createdAt: string
+  updatedAt: string
+}
+
 // ── Insurance / Tax ───────────────────────────────────────────────────────
 
 export type ExpenseCategory = 'INSURANCE' | 'REGISTRATION' | 'TAX'

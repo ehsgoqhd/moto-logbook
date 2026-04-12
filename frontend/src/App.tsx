@@ -13,6 +13,7 @@ import { MaintenancePage } from './pages/maintenance/MaintenancePage'
 import { MaintenanceFormPage } from './pages/maintenance/MaintenanceFormPage'
 import { InsurancePage } from './pages/insurance/InsurancePage'
 import { InsuranceFormPage } from './pages/insurance/InsuranceFormPage'
+import { ShopsPage } from './pages/shops/ShopsPage'
 
 function App() {
   return (
@@ -41,6 +42,8 @@ function App() {
       <Route path="/more" element={<ProtectedRoute><InsurancePage /></ProtectedRoute>} />
       <Route path="/more/new" element={<ProtectedRoute><InsuranceFormPage /></ProtectedRoute>} />
       <Route path="/more/:id/edit" element={<ProtectedRoute><InsuranceFormPage /></ProtectedRoute>} />
+
+      <Route path="/shops" element={<ProtectedRoute><ShopsPage /></ProtectedRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

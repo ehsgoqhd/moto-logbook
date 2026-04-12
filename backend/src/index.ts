@@ -8,6 +8,7 @@ import motorcyclesRouter from './routes/motorcycles'
 import fuelLogsRouter from './routes/fuelLogs'
 import maintenanceLogsRouter from './routes/maintenanceLogs'
 import insuranceTaxesRouter from './routes/insuranceTaxes'
+import shopsRouter from './routes/shops'
 import { startNotificationJob } from './jobs/notificationJob'
 
 const app = express()
@@ -49,6 +50,7 @@ app.use('/api/motorcycles', motorcyclesRouter)
 app.use('/api/fuel-logs', fuelLogsRouter)
 app.use('/api/maintenance-logs', maintenanceLogsRouter)
 app.use('/api/insurance-taxes', insuranceTaxesRouter)
+app.use('/api/shops', shopsRouter)
 
 // ── 404 handler ───────────────────────────
 app.use((_req, res) => {
